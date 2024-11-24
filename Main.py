@@ -28,7 +28,7 @@ def process_arriving_animals():
 
         for animal in animals:
             animal = animal.strip()
-            match = re.match(r"(\d+) year old (female|male) (\w+), born in (\w+|unknown), (.+) color, (\d+) pounds, from (.*)", animal)
+            match = re.match(r"(\d+) year old (female|male) (\w+), (?:born in )?([^,]+), (.+) color, (\d+) pounds, from (.*)", animal)
             if match:
                 age = int(match.group(1))
                 sex = match.group(2)
