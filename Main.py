@@ -1,124 +1,58 @@
-# Main.py
-# driver file for Zoo Keeper's Challenge
-# last update 10/13/23 by dH
-# last update 10/14/23
-# last Update 4/1/24 by dH
-
+import re
 from Animal import Animal
-from Hyena import Hyena
-from Lion import Lion
+import datetime
 
-from _datetime import date
+# Dictionary to store available names
+available_names = {}
 
-# Create lists of the species
-list_of_hyenas = []
-list_of_lions = []
-list_of_tigers = []
-list_of_bears = []
+# Function to read names from file
+def read_animal_names():
+    with open("animalNames.txt", "r") as file:
+        current_species = None
+        for line in file:
+            line = line.strip()
+            if line.endswith("Names:"):
+                current_species = line.split()[0].lower()
+                available_names[current_species] = []
+            elif line:
+                names = [name.strip() for name in line.split(",")]
+                available_names[current_species].extend(names)
 
-# This is needed for the calc birthday stuff.
-current_date = date.today()
-current_year = current_date.year
+# Function to process arriving animals and generate the zoo population report
+def process_arriving_animals():
+    with open("arrivingAnimals.txt", "r") as file:
+        animals = file.readlines()
 
-def calc_birth_date(the_season, the_years):
-    year_of_birthday = int(current_year) - int(the_years)
+    with open("zooPopulation.txt", "w") as report:
+        habitats = {"hyena": [], "lion": [], "tiger": [], "bear": []}
 
-    the_birth_day = ""
+        for animal in animals:
+            animal = animal.strip()
+            match = re.match(r"(\d+) year old (female|male) (\w+), born in (\w+|unknown), (.+) color, (\d+) pounds, from (.*)", animal)
+            if match:
+                age = int(match.group(1))
+                sex = match.group(2)
+                species = match.group(3).lower()
+                birth_season = match.group(4).lower() if match.group(4).lower() != "unknown" else None
+                color = match.group(5)
+                weight = int(match.group(6))
+                origin = match.group(7)
 
-    if "spring" in the_season:
-        the_birth_day = str(year_of_birthday) + "-03-21"
-    elif "summer" in the_season:
-        the_birth_day = str(year_of_birthday) + "-06-21"
-    elif "fall" in the_season:
-        the_birth_day = str(year_of_birthday) + "-09-21"
-    elif "winter" in the_season:
-        the_birth_day = str(year_of_birthday) + "-12-21"
-    # if the birth season is unknown
-    else:
-        the_birth_day = str(year_of_birthday) + "-01-01"
+                animal_obj = Animal(species, age, sex, birth_season, color, weight, origin, available_names)
+                habitats[species].append(animal_obj.get_animal_info())
 
-    return the_birth_day
+        for species, animals in habitats.items():
+            report.write(f"{species.capitalize()} Habitat:\n")
+            if not animals:
+                report.write("No animals in this habitat\n")
+            for animal_info in animals:
+                report.write(f"{animal_info}\n")
+            report.write("\n")
 
+# Main function to execute the script
+def main():
+    read_animal_names()
+    process_arriving_animals()
 
-def process_one_line(one_line):
-    # Create variables to help parse arrivingAnimals.txt
-    a_species = ""
-    a_gender = ""
-    age_in_years = 99
-    season = ""
-    color = ""
-    weight = ""
-    origin_01 = ""
-    origin_02 = ""
-
-    print(one_line)
-    groups_of_words = one_line.strip().split(",")
-    print(groups_of_words)
-    single_words = groups_of_words[0].strip().split(" ")
-    age_in_years = single_words[0]
-    a_gender = single_words[3]
-    a_species = single_words[4]
-    single_words = groups_of_words[1].strip().split(" ")
-    season = single_words[2]
-    color = groups_of_words[2].strip();
-    weight = groups_of_words[3].strip();
-    origin_01 = groups_of_words[4].strip();
-    origin_02 = groups_of_words[5].strip();
-
-    from_zoo = origin_01 + ", " + origin_02
-
-    birth_day = calc_birth_date(season, age_in_years)
-
-    if "hyena" in a_species:
-        # Create a hyena object.
-        my_hyena = Hyena("aName", "anID", birth_day, color, a_gender, weight, from_zoo, current_date)
-        # fill in name and ID
-        my_hyena.name = Hyena.get_hyena_name(my_hyena)
-        my_hyena.animal_id = "Hy" + str(Hyena.numOfHyenas).zfill(2)
-        # add to the hyena list
-        list_of_hyenas.append(my_hyena)
-
-    if "lion" in a_species:
-        # Create a lion object.
-        my_lion = Lion("aName", "anID", birth_day, color, a_gender, weight, from_zoo, current_date)
-        # fill in name and ID
-        my_lion.name = Lion.get_lion_name(my_lion)
-        my_lion.animal_id = "Li" + str(Hyena.numOfHyenas).zfill(2)
-        # add to the lion list
-        list_of_lions.append(my_lion)
-
-# Open arrivingAnimals.txt and read it one line at a time
-# Open the file in read mode
-file_path = r"C:\2023spring\pythonRoot\dataFiles\arrivingAnimals.txt"
-with open(file_path, "r") as file:
-    # Iterate through the file line by line
-    for line in file:
-        process_one_line(line)
-
-# Access the static variable numOfAnimals
-print(f"\n\nNumber of animals created: {Animal.numOfAnimals}")
-
-# Output the static variable numOfHyenas
-print(f"\n\nNumber of hyenas created: {Hyena.numOfHyenas}")
-
-# Output the static variable numOfLions
-print(f"\n\nNumber of lions created: {Lion.numOfLions}")
-
-# output the animals
-# this is zoo population
-print()
-print("Zookeeper's Challenge Zoo Population")
-print()
-print("Hyena Habitat:")
-print()
-for hyena in list_of_hyenas:
-    print(hyena.animal_id + ", " + hyena.name + "; birthdate: " + str(hyena.birth_date) + "; " + hyena.color +
-          "; " + hyena.gender + "; " + hyena.weight + "; " + hyena.originating_zoo + "; arrived: " +
-          str(hyena.date_arrival))
-print()
-print("Lion Habitat:")
-print()
-for lion in list_of_lions:
-    print(lion.animal_id + ", " + lion.name + "; birthdate: " + str(lion.birth_date) + "; " + lion.color +
-          "; " + lion.gender + "; " + lion.weight + "; " + lion.originating_zoo + "; arrived: " +
-          str(lion.date_arrival))
+if __name__ == "__main__":
+    main()
